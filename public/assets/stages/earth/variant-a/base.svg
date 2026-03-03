@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="earthGroundA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#71bb72"/>
+      <stop offset="100%" stop-color="#3f8f54"/>
+    </linearGradient>
+    <pattern id="terrainPatchA" width="256" height="256" patternUnits="userSpaceOnUse">
+      <rect width="256" height="256" fill="url(#earthGroundA)"/>
+      <ellipse cx="60" cy="54" rx="70" ry="36" fill="#6eab59" opacity="0.55"/>
+      <ellipse cx="184" cy="138" rx="80" ry="44" fill="#7ec27b" opacity="0.42"/>
+      <path d="M20 210 L66 126 L112 210 Z" fill="#8b7760" opacity="0.7"/>
+      <path d="M74 210 L122 112 L170 210 Z" fill="#7d6b56" opacity="0.72"/>
+      <rect x="154" y="182" width="20" height="20" fill="#cbd8e4" opacity="0.82"/>
+      <rect x="178" y="182" width="20" height="20" fill="#b9cfdf" opacity="0.8"/>
+      <rect x="202" y="182" width="20" height="20" fill="#dce7ef" opacity="0.84"/>
+      <rect x="154" y="206" width="20" height="20" fill="#d6e4ee" opacity="0.8"/>
+      <rect x="178" y="206" width="20" height="20" fill="#c3d8e7" opacity="0.8"/>
+      <rect x="202" y="206" width="20" height="20" fill="#e5eef4" opacity="0.82"/>
+      <path d="M0 78 C40 58, 96 58, 136 80 C176 102, 228 102, 256 90" stroke="#5f9d67" stroke-width="16" opacity="0.35" fill="none"/>
+    </pattern>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#terrainPatchA)"/>
+</svg>

@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@modelcontextprotocol/server-filesystem": "^2026.1.14",
+    "@playwright/mcp": "^0.0.68",
+    "@upstash/context7-mcp": "^2.1.2",
     "vite": "^7.3.1"
   },
   "dependencies": {

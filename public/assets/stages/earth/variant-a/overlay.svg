@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <pattern id="cloudBandA" width="256" height="256" patternUnits="userSpaceOnUse">
+      <ellipse cx="52" cy="56" rx="48" ry="16" fill="#ffffff" opacity="0.2"/>
+      <ellipse cx="84" cy="64" rx="40" ry="14" fill="#f3f9ff" opacity="0.2"/>
+      <ellipse cx="194" cy="134" rx="52" ry="18" fill="#ffffff" opacity="0.22"/>
+      <ellipse cx="158" cy="144" rx="34" ry="12" fill="#edf6ff" opacity="0.18"/>
+      <ellipse cx="86" cy="214" rx="58" ry="18" fill="#ffffff" opacity="0.18"/>
+      <ellipse cx="228" cy="224" rx="40" ry="13" fill="#f5faff" opacity="0.16"/>
+    </pattern>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#cloudBandA)"/>
+</svg>

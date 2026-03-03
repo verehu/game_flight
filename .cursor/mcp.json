@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem@latest",
+        "/Users/bytedance/game-workspace/game-flight"
+      ]
+    },
+    "gemini-images": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@creating-cat/gemini-image-mcp-server"
+      ],
+      "env": {
+        "GEMINI_API_KEY": "AIzaSyAAgBdLMQbISbQPnS-2BPRiNsjjPCNveSc"
+      }
+    }
+  }
+}
