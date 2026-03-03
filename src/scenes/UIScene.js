@@ -13,18 +13,18 @@ export class UIScene extends Phaser.Scene {
       .text(16, 14, 'Score: 0', {
         fontFamily: 'Arial',
         fontSize: '28px',
-        color: '#4a3a69',
-        stroke: '#ffffff',
+        color: '#b8d2f3',
+        stroke: '#0a1220',
         strokeThickness: 4
       })
       .setDepth(100)
 
     this.livesText = this.add
-      .text(GAME_WIDTH - 16, 14, 'Lives: 3', {
+      .text(GAME_WIDTH - 16, 14, 'Hull: 3', {
         fontFamily: 'Arial',
         fontSize: '28px',
-        color: '#4a3a69',
-        stroke: '#ffffff',
+        color: '#b8d2f3',
+        stroke: '#0a1220',
         strokeThickness: 4
       })
       .setOrigin(1, 0)
@@ -34,13 +34,13 @@ export class UIScene extends Phaser.Scene {
       .text(
         GAME_WIDTH / 2,
         66,
-        'Move: WASD / Arrows / Drag\nShop: 1/2/3  Music: M',
+        'Control: WASD / Arrows / Drag\nSupply: 1/2/3  Radio: M',
         {
           fontFamily: 'Arial',
           fontSize: '20px',
-          color: '#6f65a3',
+          color: '#89a8cf',
           align: 'center',
-          stroke: '#ffffff',
+          stroke: '#0a1220',
           strokeThickness: 4
         }
       )
@@ -48,22 +48,22 @@ export class UIScene extends Phaser.Scene {
       .setDepth(100)
 
     this.audioText = this.add
-      .text(GAME_WIDTH / 2, 102, 'Audio: ON', {
+      .text(GAME_WIDTH / 2, 102, 'Radio: ON', {
         fontFamily: 'Arial',
         fontSize: '20px',
-        color: '#6f65a3',
-        stroke: '#ffffff',
+        color: '#89a8cf',
+        stroke: '#0a1220',
         strokeThickness: 4
       })
       .setOrigin(0.5, 0)
       .setDepth(100)
 
     this.stageText = this.add
-      .text(GAME_WIDTH / 2, 126, 'Wave 1 - 18s', {
+      .text(GAME_WIDTH / 2, 126, 'Sector A - 18s', {
         fontFamily: 'Arial',
         fontSize: '24px',
-        color: '#ff89bd',
-        stroke: '#ffffff',
+        color: '#ffba6b',
+        stroke: '#0a1220',
         strokeThickness: 4
       })
       .setOrigin(0.5, 0)
@@ -73,8 +73,8 @@ export class UIScene extends Phaser.Scene {
       .text(16, 160, 'Fire Lv: 1', {
         fontFamily: 'Arial',
         fontSize: '22px',
-        color: '#56a8dd',
-        stroke: '#ffffff',
+        color: '#7fc4ff',
+        stroke: '#0a1220',
         strokeThickness: 4
       })
       .setDepth(100)
@@ -83,15 +83,15 @@ export class UIScene extends Phaser.Scene {
       .text(GAME_WIDTH - 16, 160, 'Shield: 0s', {
         fontFamily: 'Arial',
         fontSize: '22px',
-        color: '#57b682',
-        stroke: '#ffffff',
+        color: '#70d8a5',
+        stroke: '#0a1220',
         strokeThickness: 4
       })
       .setOrigin(1, 0)
       .setDepth(100)
 
-    this.bossBarBg = this.add.rectangle(GAME_WIDTH / 2, 190, 340, 14, 0xffd8ef).setDepth(100)
-    this.bossBarFill = this.add.rectangle(GAME_WIDTH / 2 - 170, 190, 340, 10, 0xff9fcd).setDepth(101)
+    this.bossBarBg = this.add.rectangle(GAME_WIDTH / 2, 190, 340, 14, 0x26354b).setDepth(100)
+    this.bossBarFill = this.add.rectangle(GAME_WIDTH / 2 - 170, 190, 340, 10, 0xff6d57).setDepth(101)
     this.bossBarFill.setOrigin(0, 0.5)
     this.bossBarBg.setVisible(false)
     this.bossBarFill.setVisible(false)
@@ -101,7 +101,7 @@ export class UIScene extends Phaser.Scene {
     })
 
     gameScene.events.on('lives-changed', (lives) => {
-      this.livesText.setText(`Lives: ${lives}`)
+      this.livesText.setText(`Hull: ${lives}`)
     })
 
     gameScene.events.on('fire-changed', (fireLevel) => {
@@ -126,7 +126,7 @@ export class UIScene extends Phaser.Scene {
     })
 
     gameScene.events.on('audio-changed', (muted) => {
-      this.audioText.setText(`Audio: ${muted ? 'MUTED' : 'ON'}`)
+      this.audioText.setText(`Radio: ${muted ? 'MUTED' : 'ON'}`)
     })
   }
 }

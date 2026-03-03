@@ -5,7 +5,7 @@ export const GAME_HEIGHT = 960
 
 export const GAME_CONFIG = {
   type: Phaser.AUTO,
-  backgroundColor: '#fff3fa',
+  backgroundColor: '#07111f',
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   scale: {
