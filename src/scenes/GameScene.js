@@ -210,6 +210,15 @@ const EARTH_BACKGROUND_SCHEMES = {
     dustXDrift: 0.08
   }
 }
+
+const SECTOR_TEXTURES = [
+  { base: 'bgSectorABase', planet: 'bgSectorAPlanet' },
+  { base: 'bgSectorBBase', planet: 'bgSectorBPlanet' },
+  { base: 'bgSectorCBase', planet: 'bgSectorCPlanet' }
+]
+const SECTOR_OVERLAY = 'bgCloudOverlay'
+const SECTOR_CROSSFADE_MS = 2000
+
 const EARTH_SECTOR_FACTORS = [
   { planet: 0.82, overlay: 0.85 },
   { planet: 1, overlay: 1 },
@@ -527,6 +536,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   createEarthBackground(schemeKey) {
+    const useSectorTextures = this.hasSectorTextures()
+    if (useSectorTextures) {
+      this.createSectorBackground()
+      return
+    }
+
     const scheme = EARTH_BACKGROUND_SCHEMES[schemeKey] || EARTH_BACKGROUND_SCHEMES.A
     const rawBaseKey = this.resolveBackgroundTextureKey(scheme.base, scheme.baseFallback)
     const baseKey = this.prepareSeamlessTextureForScheme(schemeKey, rawBaseKey)
@@ -539,18 +554,8 @@ export class GameScene extends Phaser.Scene {
 
     const dustTextureKey = hasEarthTextures && schemeKey === 'USER' ? 'bgTile' : hasEarthTextures ? baseKey : 'bgTile'
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'post-fix-3',hypothesisId:'N2-N5',location:'GameScene.js:createEarthBackground:asset-relation',message:'Background asset relation and layer recipe',data:{schemeKey,rawBaseKey,baseKey,planetKey,overlayKey,dustTextureKey,isBasePlanetSameAssetFamily,dustUsesBaseTexture:dustTextureKey===baseKey,userTileScalePath:schemeKey==='USER'},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
-
     this.background = this.add
-      .tileSprite(
-        GAME_WIDTH / 2,
-        GAME_HEIGHT / 2,
-        GAME_WIDTH,
-        GAME_HEIGHT,
-        hasEarthTextures ? baseKey : 'bgTile'
-      )
+      .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, hasEarthTextures ? baseKey : 'bgTile')
       .setDepth(0)
 
     const enablePlanetLayer = hasEarthTextures && !isBasePlanetSameAssetFamily
@@ -586,24 +591,7 @@ export class GameScene extends Phaser.Scene {
       this.background.setTileScale(fitScaleX, fitScaleX)
       this.backgroundDust.setTileScale(fitScaleX, fitScaleX)
       if (this.backgroundPlanet) this.backgroundPlanet.setTileScale(fitScaleX, fitScaleX)
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'post-fix',hypothesisId:'H1-H2',location:'GameScene.js:createEarthBackground:user-tilescale',message:'Applied USER tilescale to fit viewport width',data:{sourceWidth,viewWidth:GAME_WIDTH,fitScaleX},timestamp:Date.now()})}).catch(()=>{})
-      // #endregion
     }
-
-    const rawBaseSeamMismatch = this.measureVerticalSeamMismatch(rawBaseKey)
-    const seamlessBaseSeamMismatch = this.measureVerticalSeamMismatch(baseKey)
-    const fitScaleXForLog =
-      schemeKey === 'USER'
-        ? GAME_WIDTH / (this.textures.get(baseKey)?.source?.[0]?.width || GAME_WIDTH)
-        : 1
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix-4',hypothesisId:'N6-N7-N8-N9',location:'GameScene.js:createEarthBackground:render-diagnostics',message:'Background render diagnostics snapshot',data:{schemeKey,baseKey,rawBaseKey,dustTextureKey,overlayKey,enablePlanetLayer,rawBaseSeamMismatch,seamlessBaseSeamMismatch,fitScaleX:fitScaleXForLog,overlayAlpha:scheme.overlayAlpha,dustAlpha:scheme.dustAlpha,antialias:this.game.config?.antialias??null,pixelArt:this.game.config?.pixelArt??null,roundPixels:this.cameras.main?.roundPixels??null},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix',hypothesisId:'H1-H2-H3-H4-H5',location:'GameScene.js:createEarthBackground:layers',message:'Background layers render stack',data:{base:{key:this.background?.texture?.key||null,alpha:this.background?.alpha??null,depth:this.background?.depth??null},planet:this.backgroundPlanet?{key:this.backgroundPlanet.texture?.key||null,alpha:this.backgroundPlanet.alpha??null,depth:this.backgroundPlanet.depth??null}:null,dust:{key:this.backgroundDust?.texture?.key||null,alpha:this.backgroundDust?.alpha??null,depth:this.backgroundDust?.depth??null,tint:this.backgroundDust?.tintTopLeft??null},overlay:this.backgroundOverlay?{key:this.backgroundOverlay.texture?.key||null,alpha:this.backgroundOverlay.alpha??null,depth:this.backgroundOverlay.depth??null}:null},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
 
     this.backgroundScheme = {
       key: schemeKey,
@@ -618,22 +606,138 @@ export class GameScene extends Phaser.Scene {
     }
     this.backgroundPlanetBaseAlpha = scheme.planetAlpha
     this.backgroundOverlayBaseAlpha = scheme.overlayAlpha
+  }
 
-    // #region agent log
-    const baseTexture = baseKey ? this.textures.get(baseKey) : null
-    const planetTexture = planetKey ? this.textures.get(planetKey) : null
-    const overlayTexture = overlayKey ? this.textures.get(overlayKey) : null
-    const baseSize = baseTexture?.source?.[0]
-      ? { w: baseTexture.source[0].width, h: baseTexture.source[0].height }
-      : null
-    const planetSize = planetTexture?.source?.[0]
-      ? { w: planetTexture.source[0].width, h: planetTexture.source[0].height }
-      : null
-    const overlaySize = overlayTexture?.source?.[0]
-      ? { w: overlayTexture.source[0].width, h: overlayTexture.source[0].height }
-      : null
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'post-fix-3',hypothesisId:'N2-N5',location:'GameScene.js:createEarthBackground',message:'Earth background setup snapshot',data:{schemeKey,baseKey,planetKey,overlayKey,dustTextureKey,hasEarthTextures,isBasePlanetSameAssetFamily,enablePlanetLayer,baseSize,planetSize,overlaySize,viewW:GAME_WIDTH,viewH:GAME_HEIGHT,planetOffsetX:scheme.planetOffsetX||0,planetOffsetY:scheme.planetOffsetY||0,planetSpeed:scheme.planetSpeed,overlaySpeed:scheme.overlaySpeed,dustAlpha:scheme.dustAlpha,planetAlpha:scheme.planetAlpha,overlayAlpha:scheme.overlayAlpha,dustXDrift:scheme.dustXDrift??0.08,planetXDrift:scheme.planetXDrift??0.02,overlayXDrift:scheme.overlayXDrift??0.05},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
+  hasSectorTextures() {
+    const first = SECTOR_TEXTURES[0]
+    return first && this.textures.exists(first.base)
+  }
+
+  computeTileScale(textureKey) {
+    const src = this.textures.get(textureKey)?.source?.[0]
+    const w = src?.width || GAME_WIDTH
+    const s = GAME_WIDTH / w
+    return s
+  }
+
+  createSectorBackground() {
+    const sec = SECTOR_TEXTURES[0]
+    const baseKey = sec.base
+    const overlayKey = this.textures.exists(SECTOR_OVERLAY) ? SECTOR_OVERLAY : null
+    const scale = this.computeTileScale(baseKey)
+
+    this.background = this.add
+      .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, baseKey)
+      .setDepth(0)
+    this.background.setTileScale(scale, scale)
+
+    this.backgroundBaseNext = this.add
+      .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, baseKey)
+      .setDepth(0.05)
+      .setAlpha(0)
+    this.backgroundBaseNext.setTileScale(scale, scale)
+
+    this.backgroundPlanet = null
+    this.backgroundPlanetNext = null
+
+    this.backgroundDust = this.add
+      .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'bgTile')
+      .setDepth(0.4)
+      .setAlpha(0.08)
+      .setTint(0xc7dff2)
+
+    if (overlayKey) {
+      this.cloudShadow = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, overlayKey)
+        .setDepth(0.3)
+        .setAlpha(0.4)
+        .setBlendMode(Phaser.BlendModes.MULTIPLY)
+      this.cloudShadow.setTileScale(scale * 1.6, scale * 1.6)
+
+      this.backgroundOverlay = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, overlayKey)
+        .setDepth(0.5)
+        .setAlpha(0.6)
+        .setBlendMode(Phaser.BlendModes.SCREEN)
+      this.backgroundOverlay.setTileScale(scale * 1.6, scale * 1.6)
+
+      this.backgroundOverlay2 = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, overlayKey)
+        .setDepth(0.52)
+        .setAlpha(0.3)
+        .setBlendMode(Phaser.BlendModes.SCREEN)
+      this.backgroundOverlay2.setTileScale(scale * 2.8, scale * 2.8)
+      this.backgroundOverlay2.tilePositionX = 300
+      this.backgroundOverlay2.tilePositionY = 400
+      this.backgroundOverlay2.setFlipX(true)
+    } else {
+      this.cloudShadow = null
+      this.backgroundOverlay = null
+      this.backgroundOverlay2 = null
+    }
+
+    this.backgroundScheme = {
+      key: 'SECTOR',
+      hasEarthTextures: true,
+      planetSpeed: 0.74,
+      overlaySpeed: 1.05,
+      planetAlpha: 0,
+      overlayAlpha: 0.7,
+      planetXDrift: 0,
+      overlayXDrift: 0.04,
+      dustXDrift: 0.06
+    }
+    this.backgroundPlanetBaseAlpha = 0
+    this.backgroundOverlayBaseAlpha = 0.7
+    this.currentSectorIndex = 0
+    this.sectorCrossfade = null
+  }
+
+  transitionToSector(sectorIndex) {
+    if (!this.hasSectorTextures()) return
+    if (sectorIndex === this.currentSectorIndex) return
+    const clamped = Math.min(sectorIndex, SECTOR_TEXTURES.length - 1)
+    const sec = SECTOR_TEXTURES[clamped]
+    if (!sec || !this.textures.exists(sec.base)) return
+
+    const scale = this.computeTileScale(sec.base)
+
+    if (this.backgroundBaseNext) {
+      this.backgroundBaseNext.setTexture(sec.base)
+      this.backgroundBaseNext.setTileScale(scale, scale)
+      this.backgroundBaseNext.tilePositionY = this.background.tilePositionY
+      this.backgroundBaseNext.tilePositionX = this.background.tilePositionX
+      this.backgroundBaseNext.setAlpha(0)
+    }
+
+    this.sectorCrossfade = {
+      targetIndex: clamped,
+      elapsed: 0,
+      duration: SECTOR_CROSSFADE_MS,
+      scale
+    }
+  }
+
+  updateSectorCrossfade(delta) {
+    if (!this.sectorCrossfade) return
+    const cf = this.sectorCrossfade
+    cf.elapsed += delta
+    const t = Math.min(cf.elapsed / cf.duration, 1)
+    const ease = t * t * (3 - 2 * t)
+
+    if (this.backgroundBaseNext) this.backgroundBaseNext.setAlpha(ease)
+
+    if (t >= 1) {
+      const sec = SECTOR_TEXTURES[cf.targetIndex]
+      this.background.setTexture(sec.base)
+      this.background.setTileScale(cf.scale, cf.scale)
+      this.background.tilePositionY = this.backgroundBaseNext.tilePositionY
+      this.background.tilePositionX = this.backgroundBaseNext.tilePositionX
+      if (this.backgroundBaseNext) this.backgroundBaseNext.setAlpha(0)
+
+      this.currentSectorIndex = cf.targetIndex
+      this.sectorCrossfade = null
+    }
   }
 
   resolveBackgroundTextureKey(primaryKey, fallbackKey) {
@@ -702,6 +806,12 @@ export class GameScene extends Phaser.Scene {
 
   applyEarthSectorLook(waveIndex) {
     if (!this.backgroundScheme?.hasEarthTextures) return
+
+    if (this.hasSectorTextures()) {
+      this.transitionToSector(waveIndex)
+      return
+    }
+
     const factor = EARTH_SECTOR_FACTORS[Math.min(waveIndex, EARTH_SECTOR_FACTORS.length - 1)]
     this.backgroundPlanetBaseAlpha = this.backgroundScheme.planetAlpha * factor.planet
     this.backgroundOverlayBaseAlpha = this.backgroundScheme.overlayAlpha * factor.overlay
@@ -710,9 +820,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   updateBackgroundLayers(delta) {
-    this.background.tilePositionY -= (this.scrollSpeed * delta) / 1000
+    const baseScrollY = (this.scrollSpeed * delta) / 1000
+    this.background.tilePositionY -= baseScrollY
     this.backgroundDust.tilePositionY -= (this.scrollSpeed * 0.55 * delta) / 1000
     this.backgroundDust.tilePositionX += (this.scrollSpeed * this.backgroundScheme.dustXDrift * delta) / 1000
+
+    if (this.backgroundBaseNext && this.sectorCrossfade) {
+      this.backgroundBaseNext.tilePositionY -= baseScrollY
+    }
 
     if (!this.backgroundScheme?.hasEarthTextures) return
 
@@ -720,13 +835,27 @@ export class GameScene extends Phaser.Scene {
       this.backgroundPlanet.tilePositionY -= (this.scrollSpeed * this.backgroundScheme.planetSpeed * delta) / 1000
       this.backgroundPlanet.tilePositionX += (this.scrollSpeed * this.backgroundScheme.planetXDrift * delta) / 1000
     }
+    if (this.backgroundPlanetNext && this.sectorCrossfade) {
+      this.backgroundPlanetNext.tilePositionY -= (this.scrollSpeed * this.backgroundScheme.planetSpeed * delta) / 1000
+      this.backgroundPlanetNext.tilePositionX += (this.scrollSpeed * this.backgroundScheme.planetXDrift * delta) / 1000
+    }
 
+    if (this.cloudShadow) {
+      this.cloudShadow.tilePositionY -= (this.scrollSpeed * 1.1 * delta) / 1000
+      this.cloudShadow.tilePositionX += (this.scrollSpeed * 0.04 * delta) / 1000
+    }
     if (this.backgroundOverlay) {
-      this.backgroundOverlay.tilePositionY -= (this.scrollSpeed * this.backgroundScheme.overlaySpeed * delta) / 1000
-      this.backgroundOverlay.tilePositionX += (this.scrollSpeed * this.backgroundScheme.overlayXDrift * delta) / 1000
+      this.backgroundOverlay.tilePositionY -= (this.scrollSpeed * 1.12 * delta) / 1000
+      this.backgroundOverlay.tilePositionX += (this.scrollSpeed * 0.04 * delta) / 1000
       const warningAlphaMul = this.phase === 'warning' ? 0.52 : 1
       this.backgroundOverlay.setAlpha(this.backgroundOverlayBaseAlpha * warningAlphaMul)
     }
+    if (this.backgroundOverlay2) {
+      this.backgroundOverlay2.tilePositionY -= (this.scrollSpeed * 0.55 * delta) / 1000
+      this.backgroundOverlay2.tilePositionX -= (this.scrollSpeed * 0.02 * delta) / 1000
+    }
+
+    this.updateSectorCrossfade(delta)
 
     if (!this.bgDebugFirstFrameLogged) {
       this.bgDebugFirstFrameLogged = true
