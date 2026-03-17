@@ -216,6 +216,11 @@ const SECTOR_TEXTURES = [
   { base: 'bgSectorBBase', planet: 'bgSectorBPlanet' },
   { base: 'bgSectorCBase', planet: 'bgSectorCPlanet' }
 ]
+const MOON_SECTOR_TEXTURES = [
+  { base: 'bgMoonMareA' },
+  { base: 'bgMoonMareB' },
+  { base: 'bgMoonMareC' }
+]
 const SECTOR_OVERLAY = 'bgCloudOverlay'
 const SECTOR_CROSSFADE_MS = 2000
 
@@ -269,6 +274,99 @@ const RANDOM_PICKUP_WEIGHTS = [
   { kind: PICKUP_KIND.ULTIMATE, weight: 14 }
 ]
 
+const EARTH_WAVE_CONFIGS = [
+  {
+    name: 'Sector A',
+    duration: 18,
+    spawnDelay: 620,
+    fireDelay: 900,
+    weights: { scout: 50, striker: 25, tank: 8, swarm: 10, charger: 4, sniper: 2, guard: 1 },
+    speedScale: 1
+  },
+  {
+    name: 'Sector B',
+    duration: 20,
+    spawnDelay: 530,
+    fireDelay: 780,
+    weights: { scout: 36, striker: 24, tank: 14, swarm: 11, charger: 6, sniper: 5, guard: 3, ufoElite: 1 },
+    speedScale: 1.14
+  },
+  {
+    name: 'Sector C',
+    duration: 22,
+    spawnDelay: 460,
+    fireDelay: 700,
+    weights: { scout: 24, striker: 22, tank: 18, swarm: 10, charger: 9, sniper: 8, guard: 6, ufoElite: 3 },
+    speedScale: 1.24
+  }
+]
+
+const MOON_WAVE_CONFIGS = [
+  {
+    name: 'Mare A',
+    duration: 20,
+    spawnDelay: 560,
+    fireDelay: 820,
+    weights: { scout: 20, striker: 22, tank: 16, swarm: 8, charger: 16, sniper: 12, guard: 4, ufoElite: 2 },
+    speedScale: 1.15
+  },
+  {
+    name: 'Mare B',
+    duration: 22,
+    spawnDelay: 470,
+    fireDelay: 680,
+    weights: { scout: 14, striker: 18, tank: 18, swarm: 6, charger: 14, sniper: 14, guard: 10, ufoElite: 6 },
+    speedScale: 1.3
+  },
+  {
+    name: 'Mare C',
+    duration: 24,
+    spawnDelay: 380,
+    fireDelay: 580,
+    weights: { scout: 10, striker: 14, tank: 16, swarm: 8, charger: 14, sniper: 14, guard: 15, ufoElite: 9 },
+    speedScale: 1.45
+  }
+]
+
+const STAGE_CONFIGS = [
+  {
+    id: 'earth',
+    name: 'Earth Orbit',
+    waves: EARTH_WAVE_CONFIGS,
+    hasMidBoss: true,
+    midBossHp: 170,
+    midBossLabel: 'Assault Carrier',
+    bossHp: 320,
+    bossLabel: 'Command Dreadnought',
+    bossTint: 0xffceb5,
+    bossScale: 1.72,
+    bossShootCooldown: 360,
+    bgMode: 'earth'
+  },
+  {
+    id: 'moon',
+    name: 'Lunar Approach',
+    waves: MOON_WAVE_CONFIGS,
+    hasMidBoss: false,
+    bossHp: 480,
+    bossLabel: 'Lunar Fortress',
+    bossTint: 0xc0d8ff,
+    bossScale: 1.85,
+    bossShootCooldown: 300,
+    bgMode: 'moon'
+  }
+]
+
+const DEBUG_PARAMS = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    return {
+      startStage: parseInt(params.get('stage'), 10) || 0,
+      godMode: params.has('god')
+    }
+  } catch (e) { return { startStage: 0, godMode: false } }
+})()
+
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene')
@@ -279,7 +377,7 @@ export class GameScene extends Phaser.Scene {
     fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H3',location:'GameScene.js:create-enter',message:'GameScene create entered',data:{hasPlayerTexture:this.textures.exists('player'),hasEnemyTexture:this.textures.exists('enemy'),hasBgTile:this.textures.exists('bgTile')},timestamp:Date.now()})}).catch(()=>{})
     // #endregion
     this.score = 0
-    this.lives = 3
+    this.lives = DEBUG_PARAMS.godMode ? 999 : 3
     this.maxLives = 6
     this.scrollSpeed = 130
     this.isGameOver = false
@@ -310,37 +408,18 @@ export class GameScene extends Phaser.Scene {
       this.destroyMusic()
     })
 
-    this.waveConfigs = [
-      {
-        name: 'Sector A',
-        duration: 18,
-        spawnDelay: 620,
-        fireDelay: 900,
-        weights: { scout: 50, striker: 25, tank: 8, swarm: 10, charger: 4, sniper: 2, guard: 1 },
-        speedScale: 1
-      },
-      {
-        name: 'Sector B',
-        duration: 20,
-        spawnDelay: 530,
-        fireDelay: 780,
-        weights: { scout: 36, striker: 24, tank: 14, swarm: 11, charger: 6, sniper: 5, guard: 3, ufoElite: 1 },
-        speedScale: 1.14
-      },
-      {
-        name: 'Sector C',
-        duration: 22,
-        spawnDelay: 460,
-        fireDelay: 700,
-        weights: { scout: 24, striker: 22, tank: 18, swarm: 10, charger: 9, sniper: 8, guard: 6, ufoElite: 3 },
-        speedScale: 1.24
-      }
-    ]
+    this.stageIndex = DEBUG_PARAMS.startStage
+    const stage = this.getActiveStage()
+    this.waveConfigs = stage.waves
     this.waveIndex = 0
     this.waveRemaining = this.waveConfigs[this.waveIndex].duration
 
-    this.createEarthBackground(EARTH_BACKGROUND_SCHEME_KEY)
-    this.applyEarthSectorLook(this.waveIndex)
+    if (stage.bgMode === 'moon') {
+      this.createMoonBackground()
+    } else {
+      this.createEarthBackground(EARTH_BACKGROUND_SCHEME_KEY)
+      this.applyEarthSectorLook(this.waveIndex)
+    }
 
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 120)
     this.player.setDepth(2)
@@ -471,7 +550,7 @@ export class GameScene extends Phaser.Scene {
     this.levelSeconds += delta / 1000
 
     if (this.isGameOver || this.gameCleared) return
-    if (this.phase === 'warning') {
+    if (this.phase === 'warning' || this.phase === 'stage-clear') {
       this.player.setVelocity(0, 0)
       return
     }
@@ -609,7 +688,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   hasSectorTextures() {
-    const first = SECTOR_TEXTURES[0]
+    const textures = this.activeSectorTextures || SECTOR_TEXTURES
+    const first = textures[0]
     return first && this.textures.exists(first.base)
   }
 
@@ -691,13 +771,15 @@ export class GameScene extends Phaser.Scene {
     this.backgroundOverlayBaseAlpha = 0.7
     this.currentSectorIndex = 0
     this.sectorCrossfade = null
+    this.activeSectorTextures = SECTOR_TEXTURES
   }
 
   transitionToSector(sectorIndex) {
     if (!this.hasSectorTextures()) return
     if (sectorIndex === this.currentSectorIndex) return
-    const clamped = Math.min(sectorIndex, SECTOR_TEXTURES.length - 1)
-    const sec = SECTOR_TEXTURES[clamped]
+    const textures = this.activeSectorTextures || SECTOR_TEXTURES
+    const clamped = Math.min(sectorIndex, textures.length - 1)
+    const sec = textures[clamped]
     if (!sec || !this.textures.exists(sec.base)) return
 
     const scale = this.computeTileScale(sec.base)
@@ -728,7 +810,7 @@ export class GameScene extends Phaser.Scene {
     if (this.backgroundBaseNext) this.backgroundBaseNext.setAlpha(ease)
 
     if (t >= 1) {
-      const sec = SECTOR_TEXTURES[cf.targetIndex]
+      const sec = (this.activeSectorTextures || SECTOR_TEXTURES)[cf.targetIndex]
       this.background.setTexture(sec.base)
       this.background.setTileScale(cf.scale, cf.scale)
       this.background.tilePositionY = this.backgroundBaseNext.tilePositionY
@@ -1048,13 +1130,20 @@ export class GameScene extends Phaser.Scene {
       return
     }
 
-    this.phase = 'midboss-ready'
     this.enemySpawnEvent.paused = true
     this.enemyFireEvent.paused = true
     this.waveTickEvent.paused = true
     this.clearAllEnemyBullets()
     this.clearEnemiesAndPickups()
-    this.time.delayedCall(300, () => this.startMidBossStage())
+
+    const activeStage = this.getActiveStage()
+    if (activeStage.hasMidBoss) {
+      this.phase = 'midboss-ready'
+      this.time.delayedCall(300, () => this.startMidBossStage())
+    } else {
+      this.phase = 'final-ready'
+      this.time.delayedCall(300, () => this.startFinalBossStage())
+    }
   }
 
   applyWaveConfig(config) {
@@ -1302,30 +1391,34 @@ export class GameScene extends Phaser.Scene {
   }
 
   startMidBossStage() {
+    const activeStage = this.getActiveStage()
     this.waveTickEvent.paused = true
     this.enemySpawnEvent.paused = true
     this.enemyFireEvent.paused = true
     this.clearAllEnemyBullets()
     this.clearEnemiesAndPickups()
-    this.beginBossWarning('WARNING: ASSAULT CARRIER', () => {
+    const label = activeStage.midBossLabel || 'Assault Carrier'
+    this.beginBossWarning(`WARNING: ${label.toUpperCase()}`, () => {
       this.phase = 'midboss'
       this.startBossMusic()
       this.spawnBoss('mid')
-      this.events.emit('stage-changed', 'Assault Carrier')
+      this.events.emit('stage-changed', label)
     })
   }
 
   startFinalBossStage() {
+    const activeStage = this.getActiveStage()
     this.waveTickEvent.paused = true
     this.enemySpawnEvent.paused = true
     this.enemyFireEvent.paused = true
     this.clearAllEnemyBullets()
     this.clearEnemiesAndPickups()
-    this.beginBossWarning('WARNING: COMMAND DREADNOUGHT', () => {
+    const label = activeStage.bossLabel || 'Command Dreadnought'
+    this.beginBossWarning(`WARNING: ${label.toUpperCase()}`, () => {
       this.phase = 'finalboss'
       this.startBossMusic()
       this.spawnBoss('final')
-      this.events.emit('stage-changed', 'Command Dreadnought')
+      this.events.emit('stage-changed', label)
     })
   }
 
@@ -1372,6 +1465,7 @@ export class GameScene extends Phaser.Scene {
 
   spawnBoss(kind) {
     if (this.isGameOver || this.hasActiveBoss()) return
+    const activeStage = this.getActiveStage()
 
     const boss = this.bosses.get(GAME_WIDTH / 2, -90, 'boss')
     if (!boss) return
@@ -1383,19 +1477,19 @@ export class GameScene extends Phaser.Scene {
     boss.entered = false
 
     if (kind === 'mid') {
-      boss.hp = 170
-      boss.maxHp = 170
+      boss.hp = activeStage.midBossHp || 170
+      boss.maxHp = boss.hp
       boss.body.setVelocityY(80)
       boss.baseTint = 0xfff0e6
       boss.setTint(boss.baseTint)
       boss.baseScale = 1.5
     } else {
-      boss.hp = 320
-      boss.maxHp = 320
+      boss.hp = activeStage.bossHp
+      boss.maxHp = boss.hp
       boss.body.setVelocityY(70)
-      boss.baseTint = 0xffceb5
+      boss.baseTint = activeStage.bossTint
       boss.setTint(boss.baseTint)
-      boss.baseScale = 1.72
+      boss.baseScale = activeStage.bossScale
     }
     boss.setScale(boss.baseScale)
     boss.body.setSize(boss.width * 0.52, boss.height * 0.58, true)
@@ -1416,9 +1510,19 @@ export class GameScene extends Phaser.Scene {
 
     if (!boss.entered) return
 
-    const speed = boss.kind === 'final' ? 0.0019 : 0.0014
-    const range = boss.kind === 'final' ? 180 : 150
-    boss.x = GAME_WIDTH / 2 + Math.sin(time * speed) * range
+    const activeStage = this.getActiveStage()
+    let bossSpeed, bossRange
+    if (boss.kind === 'mid') {
+      bossSpeed = 0.0014
+      bossRange = 150
+    } else if (activeStage.id === 'moon') {
+      bossSpeed = 0.0023
+      bossRange = 210
+    } else {
+      bossSpeed = 0.0019
+      bossRange = 180
+    }
+    boss.x = GAME_WIDTH / 2 + Math.sin(time * bossSpeed) * bossRange
     const pulse = Math.sin(time * 0.01) * 0.02
     boss.setScale((boss.baseScale || 1) + pulse)
     if (time >= (boss.engineTrailAt || 0)) {
@@ -1488,19 +1592,42 @@ export class GameScene extends Phaser.Scene {
   }
 
   bossShoot(time, boss) {
-    const cooldown = boss.kind === 'final' ? 360 : 540
+    const activeStage = this.getActiveStage()
+    const cooldown = boss.kind === 'mid' ? 540 : (activeStage.bossShootCooldown || 360)
     if (time - this.lastBossShotAt < cooldown) return
 
-    const phase = Math.floor(time / 800) % 3
     let pattern = []
+    let bulletSpeed = 320
+    let bulletTint = 0xd93bc1
+
     if (boss.kind === 'mid') {
       pattern = [-220, -140, -60, 0, 60, 140, 220]
-    } else if (phase === 0) {
-      pattern = [-280, -210, -140, -70, 0, 70, 140, 210, 280]
-    } else if (phase === 1) {
-      pattern = [-220, -110, 0, 110, 220]
+      bulletSpeed = 260
+      bulletTint = 0x8f4fe8
+    } else if (activeStage.id === 'moon') {
+      bulletTint = 0x5f9fff
+      bulletSpeed = 340
+      const moonPhase = Math.floor(time / 700) % 3
+      if (moonPhase === 0) {
+        pattern = Array.from({ length: 11 }, (_, i) => (i - 5) * 56)
+      } else if (moonPhase === 1) {
+        const offset = Math.floor(time / 350) % 2 === 0 ? 30 : -30
+        pattern = Array.from({ length: 7 }, (_, i) => (i - 3) * 80 + offset)
+      } else {
+        const rotAngle = (time * 0.003) % (Math.PI * 2)
+        pattern = Array.from({ length: 8 }, (_, i) =>
+          Math.sin(rotAngle + (i * Math.PI) / 4) * 260
+        )
+      }
     } else {
-      pattern = [-260, -180, -100, 100, 180, 260]
+      const earthPhase = Math.floor(time / 800) % 3
+      if (earthPhase === 0) {
+        pattern = [-280, -210, -140, -70, 0, 70, 140, 210, 280]
+      } else if (earthPhase === 1) {
+        pattern = [-220, -110, 0, 110, 220]
+      } else {
+        pattern = [-260, -180, -100, 100, 180, 260]
+      }
     }
 
     pattern.forEach((vx) => {
@@ -1508,11 +1635,11 @@ export class GameScene extends Phaser.Scene {
       if (!bullet) return
       bullet.setActive(true).setVisible(true)
       bullet.body.enable = true
-      bullet.body.setVelocity(vx, boss.kind === 'final' ? 320 : 260)
+      bullet.body.setVelocity(vx, bulletSpeed)
       bullet.setScale(0.78)
       bullet.body.setSize(22, 22)
       bullet.setDepth(3)
-      bullet.setTint(boss.kind === 'final' ? 0xd93bc1 : 0x8f4fe8)
+      bullet.setTint(bulletTint)
     })
 
     this.lastBossShotAt = time
@@ -1580,6 +1707,8 @@ export class GameScene extends Phaser.Scene {
     if (boss.kind === 'mid') {
       this.phase = 'final-ready'
       this.time.delayedCall(450, () => this.startFinalBossStage())
+    } else if (this.stageIndex < STAGE_CONFIGS.length - 1) {
+      this.time.delayedCall(600, () => this.showStageClearOverlay())
     } else {
       this.winGame()
     }
@@ -1839,6 +1968,166 @@ export class GameScene extends Phaser.Scene {
       this.physics.world.resume()
       this.hitStopLock = false
     })
+  }
+
+  getActiveStage() {
+    return STAGE_CONFIGS[this.stageIndex] || STAGE_CONFIGS[0]
+  }
+
+  showStageClearOverlay() {
+    this.phase = 'stage-clear'
+    this.enemySpawnEvent.paused = true
+    this.enemyFireEvent.paused = true
+    this.waveTickEvent.paused = true
+    this.startStageMusic()
+
+    const activeStage = this.getActiveStage()
+    const clearText = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30, `${activeStage.name.toUpperCase()}\nCLEAR`, {
+        fontFamily: 'Arial',
+        fontSize: '48px',
+        color: '#ffd080',
+        align: 'center',
+        stroke: '#111',
+        strokeThickness: 7
+      })
+      .setOrigin(0.5)
+      .setDepth(38)
+
+    this.tweens.add({
+      targets: clearText,
+      scale: { from: 0.5, to: 1 },
+      alpha: { from: 0, to: 1 },
+      duration: 600,
+      ease: 'Back.out'
+    })
+
+    this.time.delayedCall(2500, () => {
+      this.tweens.add({
+        targets: clearText,
+        alpha: 0,
+        duration: 400,
+        onComplete: () => clearText.destroy()
+      })
+      this.advanceToNextStage()
+    })
+  }
+
+  advanceToNextStage() {
+    this.stageIndex += 1
+    const nextStage = this.getActiveStage()
+
+    this.destroyBackgroundLayers()
+
+    if (nextStage.bgMode === 'moon') {
+      this.createMoonBackground()
+    } else {
+      this.createEarthBackground(EARTH_BACKGROUND_SCHEME_KEY)
+    }
+
+    this.waveConfigs = nextStage.waves
+    this.waveIndex = 0
+    this.waveRemaining = this.waveConfigs[0].duration
+
+    const enterText = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, `ENTERING ${nextStage.name.toUpperCase()}`, {
+        fontFamily: 'Arial',
+        fontSize: '36px',
+        color: '#c0d8ff',
+        stroke: '#0a1020',
+        strokeThickness: 6
+      })
+      .setOrigin(0.5)
+      .setDepth(38)
+
+    this.tweens.add({
+      targets: enterText,
+      alpha: { from: 1, to: 0 },
+      duration: 2000,
+      ease: 'Sine.out',
+      onComplete: () => enterText.destroy()
+    })
+
+    this.phase = 'wave'
+    this.applyWaveConfig(this.waveConfigs[0])
+    this.enemySpawnEvent.paused = false
+    this.enemyFireEvent.paused = false
+    this.waveTickEvent.paused = false
+
+    this.events.emit('stage-changed', `${this.waveConfigs[0].name} - ${this.waveRemaining}s`)
+  }
+
+  destroyBackgroundLayers() {
+    const layers = [
+      this.background, this.backgroundBaseNext,
+      this.backgroundPlanet, this.backgroundPlanetNext,
+      this.backgroundDust, this.backgroundOverlay,
+      this.backgroundOverlay2, this.cloudShadow
+    ]
+    layers.forEach((layer) => { if (layer) layer.destroy() })
+    this.background = null
+    this.backgroundBaseNext = null
+    this.backgroundPlanet = null
+    this.backgroundPlanetNext = null
+    this.backgroundDust = null
+    this.backgroundOverlay = null
+    this.backgroundOverlay2 = null
+    this.cloudShadow = null
+    this.sectorCrossfade = null
+  }
+
+  createMoonBackground() {
+    const textures = MOON_SECTOR_TEXTURES
+    const baseKey = textures[0].base
+
+    if (this.textures.exists(baseKey)) {
+      const scale = this.computeTileScale(baseKey)
+      this.background = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, baseKey)
+        .setDepth(0)
+      this.background.setTileScale(scale, scale)
+
+      this.backgroundBaseNext = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, baseKey)
+        .setDepth(0.05)
+        .setAlpha(0)
+      this.backgroundBaseNext.setTileScale(scale, scale)
+    } else {
+      this.background = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'bgTile')
+        .setDepth(0)
+      this.backgroundBaseNext = null
+    }
+
+    this.backgroundPlanet = null
+    this.backgroundPlanetNext = null
+
+    this.backgroundDust = this.add
+      .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'bgTile')
+      .setDepth(0.4)
+      .setAlpha(0.06)
+      .setTint(0x8fb5d8)
+
+    this.cloudShadow = null
+    this.backgroundOverlay = null
+    this.backgroundOverlay2 = null
+
+    this.backgroundScheme = {
+      key: 'MOON',
+      hasEarthTextures: true,
+      planetSpeed: 0,
+      overlaySpeed: 0,
+      planetAlpha: 0,
+      overlayAlpha: 0,
+      planetXDrift: 0,
+      overlayXDrift: 0,
+      dustXDrift: 0.04
+    }
+    this.backgroundPlanetBaseAlpha = 0
+    this.backgroundOverlayBaseAlpha = 0
+    this.currentSectorIndex = 0
+    this.sectorCrossfade = null
+    this.activeSectorTextures = textures
   }
 
   winGame() {

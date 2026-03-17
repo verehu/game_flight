@@ -64,6 +64,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image('particle', `${base}/PNG/Effects/star3.png`)
     this.load.image('engineFlame', `${base}/PNG/Effects/fire17.png`)
 
+    const moonBase = '/assets/stages/moon'
+    this.load.image('bgMoonMareA', `${moonBase}/user/mare-a-base.png`)
+    this.load.image('bgMoonMareB', `${moonBase}/user/mare-b-base.png`)
+    this.load.image('bgMoonMareC', `${moonBase}/user/mare-c-base.png`)
+
     this.load.once('complete', (loader, totalComplete, totalFailed) => {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H1',location:'BootScene.js:preload-complete',message:'Boot preload complete',data:{totalComplete,totalFailed},timestamp:Date.now()})}).catch(()=>{})
