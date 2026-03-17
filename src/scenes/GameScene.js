@@ -1003,10 +1003,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   setupMusic() {
-    if (this.cache.audio.exists('bgmStage')) {
+    const stageBgmKeys = {
+      earth: 'bgmStage',
+      moon: 'bgmStageMoon',
+      mars: 'bgmStageMars'
+    }
+    const bossBgmKeys = {
+      earth: 'bgmBoss',
+      moon: 'bgmBossMoon',
+      mars: 'bgmBossMars'
+    }
+    const activeStage = this.getActiveStage()
+    const stageKey = stageBgmKeys[activeStage.id] || 'bgmStage'
+    const bossKey = bossBgmKeys[activeStage.id] || 'bgmBoss'
+
+    if (this.cache.audio.exists(stageKey)) {
+      this.music.stage = this.sound.add(stageKey, { loop: true, volume: 0 })
+    } else if (this.cache.audio.exists('bgmStage')) {
       this.music.stage = this.sound.add('bgmStage', { loop: true, volume: 0 })
     }
-    if (this.cache.audio.exists('bgmBoss')) {
+    if (this.cache.audio.exists(bossKey)) {
+      this.music.boss = this.sound.add(bossKey, { loop: true, volume: 0 })
+    } else if (this.cache.audio.exists('bgmBoss')) {
       this.music.boss = this.sound.add('bgmBoss', { loop: true, volume: 0 })
     }
   }
@@ -2085,6 +2103,12 @@ export class GameScene extends Phaser.Scene {
   advanceToNextStage() {
     this.stageIndex += 1
     const nextStage = this.getActiveStage()
+
+    this.destroyMusic(200)
+    this.time.delayedCall(250, () => {
+      this.setupMusic()
+      this.startStageMusic()
+    })
 
     this.destroyBackgroundLayers()
 

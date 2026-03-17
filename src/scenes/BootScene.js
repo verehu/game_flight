@@ -18,6 +18,10 @@ export class BootScene extends Phaser.Scene {
     }
     this.load.audio('bgmStage', ['audio/shmup-stage.ogg', 'audio/shmup-stage.mp3'])
     this.load.audio('bgmBoss', ['audio/shmup-boss.ogg', 'audio/shmup-boss.mp3'])
+    this.load.audio('bgmStageMoon', 'audio/shmup-stage-moon.mp3')
+    this.load.audio('bgmBossMoon', 'audio/shmup-boss-moon.mp3')
+    this.load.audio('bgmStageMars', 'audio/shmup-stage-mars.mp3')
+    this.load.audio('bgmBossMars', 'audio/shmup-boss-mars.mp3')
     this.load.image('bgTile', `${base}/Backgrounds/darkPurple.png`)
     this.load.svg('bgEarthABase', `${earthBase}/variant-a/base.svg`, { width: 1024, height: 1024 })
     this.load.svg('bgEarthAPlanet', `${earthBase}/variant-a/planet.svg`, { width: 1024, height: 1024 })
