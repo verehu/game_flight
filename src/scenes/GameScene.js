@@ -221,6 +221,11 @@ const MOON_SECTOR_TEXTURES = [
   { base: 'bgMoonMareB' },
   { base: 'bgMoonMareC' }
 ]
+const MARS_SECTOR_TEXTURES = [
+  { base: 'bgMarsZoneA' },
+  { base: 'bgMarsZoneB' },
+  { base: 'bgMarsZoneC' }
+]
 const SECTOR_OVERLAY = 'bgCloudOverlay'
 const SECTOR_CROSSFADE_MS = 2000
 
@@ -328,6 +333,33 @@ const MOON_WAVE_CONFIGS = [
   }
 ]
 
+const MARS_WAVE_CONFIGS = [
+  {
+    name: 'Valles A',
+    duration: 22,
+    spawnDelay: 480,
+    fireDelay: 720,
+    weights: { scout: 12, striker: 16, tank: 20, swarm: 6, charger: 18, sniper: 14, guard: 8, ufoElite: 6 },
+    speedScale: 1.35
+  },
+  {
+    name: 'Valles B',
+    duration: 24,
+    spawnDelay: 390,
+    fireDelay: 600,
+    weights: { scout: 8, striker: 12, tank: 18, swarm: 8, charger: 16, sniper: 16, guard: 14, ufoElite: 8 },
+    speedScale: 1.5
+  },
+  {
+    name: 'Valles C',
+    duration: 26,
+    spawnDelay: 320,
+    fireDelay: 500,
+    weights: { scout: 6, striker: 10, tank: 16, swarm: 8, charger: 14, sniper: 14, guard: 18, ufoElite: 14 },
+    speedScale: 1.65
+  }
+]
+
 const STAGE_CONFIGS = [
   {
     id: 'earth',
@@ -352,6 +384,18 @@ const STAGE_CONFIGS = [
     bossScale: 1.85,
     bossShootCooldown: 300,
     bgMode: 'moon'
+  },
+  {
+    id: 'mars',
+    name: 'Mars Descent',
+    waves: MARS_WAVE_CONFIGS,
+    hasMidBoss: false,
+    bossHp: 640,
+    bossLabel: 'Olympus Warden',
+    bossTint: 0xff8a60,
+    bossScale: 1.95,
+    bossShootCooldown: 250,
+    bgMode: 'mars'
   }
 ]
 
@@ -412,7 +456,9 @@ export class GameScene extends Phaser.Scene {
     this.waveIndex = 0
     this.waveRemaining = this.waveConfigs[this.waveIndex].duration
 
-    if (stage.bgMode === 'moon') {
+    if (stage.bgMode === 'mars') {
+      this.createMarsBackground()
+    } else if (stage.bgMode === 'moon') {
       this.createMoonBackground()
     } else {
       this.createEarthBackground(EARTH_BACKGROUND_SCHEME_KEY)
@@ -1513,6 +1559,9 @@ export class GameScene extends Phaser.Scene {
     if (boss.kind === 'mid') {
       bossSpeed = 0.0014
       bossRange = 150
+    } else if (activeStage.id === 'mars') {
+      bossSpeed = 0.0028
+      bossRange = 230
     } else if (activeStage.id === 'moon') {
       bossSpeed = 0.0023
       bossRange = 210
@@ -1602,6 +1651,28 @@ export class GameScene extends Phaser.Scene {
       pattern = [-220, -140, -60, 0, 60, 140, 220]
       bulletSpeed = 260
       bulletTint = 0x8f4fe8
+    } else if (activeStage.id === 'mars') {
+      bulletTint = 0xff6a3d
+      bulletSpeed = 360
+      const marsPhase = Math.floor(time / 600) % 4
+      if (marsPhase === 0) {
+        pattern = Array.from({ length: 13 }, (_, i) => (i - 6) * 48)
+      } else if (marsPhase === 1) {
+        const rotAngle = (time * 0.004) % (Math.PI * 2)
+        pattern = Array.from({ length: 10 }, (_, i) =>
+          Math.sin(rotAngle + (i * Math.PI) / 5) * 280
+        )
+      } else if (marsPhase === 2) {
+        const sweep = Math.sin(time * 0.005) * 200
+        pattern = Array.from({ length: 5 }, (_, i) => sweep + (i - 2) * 50)
+      } else {
+        const offset1 = Math.floor(time / 300) % 2 === 0 ? 40 : -40
+        const offset2 = -offset1
+        pattern = [
+          ...Array.from({ length: 5 }, (_, i) => (i - 2) * 70 + offset1),
+          ...Array.from({ length: 5 }, (_, i) => (i - 2) * 70 + offset2)
+        ]
+      }
     } else if (activeStage.id === 'moon') {
       bulletTint = 0x5f9fff
       bulletSpeed = 340
@@ -2017,7 +2088,9 @@ export class GameScene extends Phaser.Scene {
 
     this.destroyBackgroundLayers()
 
-    if (nextStage.bgMode === 'moon') {
+    if (nextStage.bgMode === 'mars') {
+      this.createMarsBackground()
+    } else if (nextStage.bgMode === 'moon') {
       this.createMoonBackground()
     } else {
       this.createEarthBackground(EARTH_BACKGROUND_SCHEME_KEY)
@@ -2120,6 +2193,60 @@ export class GameScene extends Phaser.Scene {
       planetXDrift: 0,
       overlayXDrift: 0,
       dustXDrift: 0.04
+    }
+    this.backgroundPlanetBaseAlpha = 0
+    this.backgroundOverlayBaseAlpha = 0
+    this.currentSectorIndex = 0
+    this.sectorCrossfade = null
+    this.activeSectorTextures = textures
+  }
+
+  createMarsBackground() {
+    const textures = MARS_SECTOR_TEXTURES
+    const baseKey = textures[0].base
+
+    if (this.textures.exists(baseKey)) {
+      const scale = this.computeTileScale(baseKey)
+      this.background = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, baseKey)
+        .setDepth(0)
+      this.background.setTileScale(scale, scale)
+
+      this.backgroundBaseNext = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, baseKey)
+        .setDepth(0.05)
+        .setAlpha(0)
+      this.backgroundBaseNext.setTileScale(scale, scale)
+    } else {
+      this.background = this.add
+        .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'bgTile')
+        .setDepth(0)
+      this.backgroundBaseNext = null
+    }
+
+    this.backgroundPlanet = null
+    this.backgroundPlanetNext = null
+
+    this.backgroundDust = this.add
+      .tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'bgTile')
+      .setDepth(0.4)
+      .setAlpha(0.07)
+      .setTint(0xd4836a)
+
+    this.cloudShadow = null
+    this.backgroundOverlay = null
+    this.backgroundOverlay2 = null
+
+    this.backgroundScheme = {
+      key: 'MARS',
+      hasEarthTextures: true,
+      planetSpeed: 0,
+      overlaySpeed: 0,
+      planetAlpha: 0,
+      overlayAlpha: 0,
+      planetXDrift: 0,
+      overlayXDrift: 0,
+      dustXDrift: 0.05
     }
     this.backgroundPlanetBaseAlpha = 0
     this.backgroundOverlayBaseAlpha = 0

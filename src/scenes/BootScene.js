@@ -69,6 +69,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bgMoonMareB', `${moonBase}/user/mare-b-base.png`)
     this.load.image('bgMoonMareC', `${moonBase}/user/mare-c-base.png`)
 
+    const marsBase = '/assets/stages/mars'
+    this.load.image('bgMarsZoneA', `${marsBase}/user/zone-a-base.png`)
+    this.load.image('bgMarsZoneB', `${marsBase}/user/zone-b-base.png`)
+    this.load.image('bgMarsZoneC', `${marsBase}/user/zone-c-base.png`)
+
     this.load.once('complete', (loader, totalComplete, totalFailed) => {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H1',location:'BootScene.js:preload-complete',message:'Boot preload complete',data:{totalComplete,totalFailed},timestamp:Date.now()})}).catch(()=>{})
@@ -86,7 +91,47 @@ export class BootScene extends Phaser.Scene {
     fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H2',location:'BootScene.js:create-before-start',message:'Boot create starting GameScene',data:{hasPlayerTexture:this.textures.exists('player'),hasBgTile:this.textures.exists('bgTile')},timestamp:Date.now()})}).catch(()=>{})
     // #endregion
     this.createFxTextures()
+    this.createMarsPlaceholderTextures()
     this.scene.start('GameScene')
+  }
+
+  createMarsPlaceholderTextures() {
+    const needed = ['bgMarsZoneA', 'bgMarsZoneB', 'bgMarsZoneC']
+    const allLoaded = needed.every((k) => this.textures.exists(k))
+    if (allLoaded) return
+
+    const variants = [
+      { key: 'bgMarsZoneA', bg1: '#1a0c08', bg2: '#2a1610', bg3: '#1e0f0a', stars: 50 },
+      { key: 'bgMarsZoneB', bg1: '#1e1008', bg2: '#301a10', bg3: '#22120a', stars: 40 },
+      { key: 'bgMarsZoneC', bg1: '#22140c', bg2: '#381e14', bg3: '#28160e', stars: 30 }
+    ]
+    const rng = (seed) => {
+      let s = seed
+      return () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647 }
+    }
+    variants.forEach((v, idx) => {
+      if (this.textures.exists(v.key)) return
+      const canvas = this.textures.createCanvas(v.key, 540, 960)
+      const ctx = canvas.getContext()
+      const grad = ctx.createLinearGradient(0, 0, 0, 960)
+      grad.addColorStop(0, v.bg1)
+      grad.addColorStop(0.5, v.bg2)
+      grad.addColorStop(1, v.bg3)
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, 540, 960)
+      const rand = rng(99 + idx * 211)
+      for (let s = 0; s < v.stars; s++) {
+        const sx = rand() * 540
+        const sy = rand() * 960
+        const size = rand() * 2.5 + 0.5
+        const a = rand() * 0.3 + 0.15
+        ctx.fillStyle = `rgba(200, 140, 100, ${a})`
+        ctx.beginPath()
+        ctx.arc(sx, sy, size, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      canvas.refresh()
+    })
   }
 
   createFxTextures() {
