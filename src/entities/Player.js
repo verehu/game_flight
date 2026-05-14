@@ -46,12 +46,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (dx !== 0 || dy !== 0) {
       const vec = new Phaser.Math.Vector2(dx, dy).normalize().scale(this.speed)
       this.setVelocity(vec.x, vec.y)
-      if ((this.scene.debugPlayerKbdLogAt || 0) <= this.scene.time.now) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix',hypothesisId:'H3',location:'Player.js:update',message:'Keyboard movement velocity applied',data:{dx,dy,targetSpeed:this.speed,appliedVx:this.body?.velocity?.x||0,appliedVy:this.body?.velocity?.y||0,appliedSpeed:Math.hypot(this.body?.velocity?.x||0,this.body?.velocity?.y||0)},timestamp:Date.now()})}).catch(()=>{})
-        // #endregion
-        this.scene.debugPlayerKbdLogAt = this.scene.time.now + 260
-      }
     } else {
       this.setVelocity(0, 0)
     }

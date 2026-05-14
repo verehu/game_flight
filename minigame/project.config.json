@@ -1,0 +1,22 @@
+{
+  "compileType": "game",
+  "appid": "wxaec4f3a2f8ba2fb4",
+  "projectname": "game-flight",
+  "description": "Game Flight - Phaser 3 WeChat Mini Game",
+  "setting": {
+    "es6": false,
+    "enhance": false,
+    "urlCheck": false,
+    "minified": false,
+    "uploadWithSourceMap": false,
+    "compileHotReLoad": false,
+    "postcss": false,
+    "nodeModules": false,
+    "autoAudits": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "swc": false,
+    "disableSWC": true
+  },
+  "isGameTourist": false
+}

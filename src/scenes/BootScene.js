@@ -1,14 +1,13 @@
 import Phaser from 'phaser'
 
+const IS_MINIGAME = typeof __MINIGAME__ !== 'undefined' && __MINIGAME__
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('BootScene')
   }
 
   preload() {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H1',location:'BootScene.js:preload-enter',message:'Boot preload started',data:{sceneKey:this.scene.key},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
     const base = '/assets/kenney/SpaceShooterRedux'
     const earthBase = '/assets/stages/earth'
     const earthRef = {
@@ -16,33 +15,50 @@ export class BootScene extends Phaser.Scene {
       planet: 'https://opengameart.org/sites/default/files/backgrounddetailed3.png',
       overlay: 'https://opengameart.org/sites/default/files/oga-textures/136561/fx_cloudalpha07.png'
     }
-    this.load.audio('bgmStage', ['audio/shmup-stage.ogg', 'audio/shmup-stage.mp3'])
-    this.load.audio('bgmBoss', ['audio/shmup-boss.ogg', 'audio/shmup-boss.mp3'])
-    this.load.audio('bgmStageMoon', 'audio/shmup-stage-moon.mp3')
-    this.load.audio('bgmBossMoon', 'audio/shmup-boss-moon.mp3')
-    this.load.audio('bgmStageMars', 'audio/shmup-stage-mars.mp3')
-    this.load.audio('bgmBossMars', 'audio/shmup-boss-mars.mp3')
+
+    if (IS_MINIGAME) {
+      this.load.audio('bgmStage', 'audio/shmup-stage-moon.mp3')
+      this.load.audio('bgmBoss', 'audio/shmup-boss-moon.mp3')
+      this.load.image('bgTile', `${base}/Backgrounds/darkPurple.png`)
+      this.load.image('bgSectorABase', `${earthBase}/user/sector-a-base.png`)
+      this.load.image('bgCloudOverlay', `${earthBase}/user/cloud-overlay.png`)
+      return
+    }
+
+    if (!IS_MINIGAME) {
+      this.load.audio('bgmStage', ['audio/shmup-stage.ogg', 'audio/shmup-stage.mp3'])
+      this.load.audio('bgmBoss', ['audio/shmup-boss.ogg', 'audio/shmup-boss.mp3'])
+      this.load.audio('bgmStageMoon', 'audio/shmup-stage-moon.mp3')
+      this.load.audio('bgmBossMoon', 'audio/shmup-boss-moon.mp3')
+      this.load.audio('bgmStageMars', 'audio/shmup-stage-mars.mp3')
+      this.load.audio('bgmBossMars', 'audio/shmup-boss-mars.mp3')
+    }
     this.load.image('bgTile', `${base}/Backgrounds/darkPurple.png`)
-    this.load.svg('bgEarthABase', `${earthBase}/variant-a/base.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthAPlanet', `${earthBase}/variant-a/planet.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthAOverlay', `${earthBase}/variant-a/overlay.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthBBase', `${earthBase}/variant-b/base.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthBPlanet', `${earthBase}/variant-b/planet.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthBOverlay', `${earthBase}/variant-b/overlay.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthCBaseFallback', `${earthBase}/variant-c/base.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthCPlanetFallback', `${earthBase}/variant-c/planet.svg`, { width: 1024, height: 1024 })
-    this.load.svg('bgEarthCOverlayFallback', `${earthBase}/variant-c/overlay.svg`, { width: 1024, height: 1024 })
-    this.load.image('bgEarthUserBase', `${earthBase}/user/earth-topdown-scroll.png`)
-    this.load.image('bgSectorABase', `${earthBase}/user/sector-a-base.png`)
-    this.load.image('bgSectorAPlanet', `${earthBase}/user/sector-a-planet.png`)
-    this.load.image('bgSectorBBase', `${earthBase}/user/sector-b-base.png`)
-    this.load.image('bgSectorBPlanet', `${earthBase}/user/sector-b-planet.png`)
-    this.load.image('bgSectorCBase', `${earthBase}/user/sector-c-base.png`)
-    this.load.image('bgSectorCPlanet', `${earthBase}/user/sector-c-planet.png`)
-    this.load.image('bgCloudOverlay', `${earthBase}/user/cloud-overlay.png`)
-    this.load.image('bgEarthCBase', earthRef.base)
-    this.load.image('bgEarthCPlanet', earthRef.planet)
-    this.load.image('bgEarthCOverlay', earthRef.overlay)
+
+    if (!IS_MINIGAME) {
+      this.load.svg('bgEarthABase', `${earthBase}/variant-a/base.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthAPlanet', `${earthBase}/variant-a/planet.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthAOverlay', `${earthBase}/variant-a/overlay.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthBBase', `${earthBase}/variant-b/base.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthBPlanet', `${earthBase}/variant-b/planet.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthBOverlay', `${earthBase}/variant-b/overlay.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthCBaseFallback', `${earthBase}/variant-c/base.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthCPlanetFallback', `${earthBase}/variant-c/planet.svg`, { width: 1024, height: 1024 })
+      this.load.svg('bgEarthCOverlayFallback', `${earthBase}/variant-c/overlay.svg`, { width: 1024, height: 1024 })
+    }
+    if (!IS_MINIGAME) {
+      this.load.image('bgEarthUserBase', `${earthBase}/user/earth-topdown-scroll.png`)
+      this.load.image('bgSectorABase', `${earthBase}/user/sector-a-base.png`)
+      this.load.image('bgSectorAPlanet', `${earthBase}/user/sector-a-planet.png`)
+      this.load.image('bgSectorBBase', `${earthBase}/user/sector-b-base.png`)
+      this.load.image('bgSectorBPlanet', `${earthBase}/user/sector-b-planet.png`)
+      this.load.image('bgSectorCBase', `${earthBase}/user/sector-c-base.png`)
+      this.load.image('bgSectorCPlanet', `${earthBase}/user/sector-c-planet.png`)
+      this.load.image('bgCloudOverlay', `${earthBase}/user/cloud-overlay.png`)
+      this.load.image('bgEarthCBase', earthRef.base)
+      this.load.image('bgEarthCPlanet', earthRef.planet)
+      this.load.image('bgEarthCOverlay', earthRef.overlay)
+    }
     this.load.image('player', `${base}/PNG/playerShip2_blue.png`)
     this.load.image('bullet', `${base}/PNG/Lasers/laserBlue16.png`)
     this.load.image('enemy', `${base}/PNG/Enemies/enemyBlack2.png`)
@@ -69,34 +85,116 @@ export class BootScene extends Phaser.Scene {
     this.load.image('engineFlame', `${base}/PNG/Effects/fire17.png`)
 
     const moonBase = '/assets/stages/moon'
-    this.load.image('bgMoonMareA', `${moonBase}/user/mare-a-base.png`)
-    this.load.image('bgMoonMareB', `${moonBase}/user/mare-b-base.png`)
-    this.load.image('bgMoonMareC', `${moonBase}/user/mare-c-base.png`)
+    if (!IS_MINIGAME) {
+      this.load.image('bgMoonMareA', `${moonBase}/user/mare-a-base.png`)
+      this.load.image('bgMoonMareB', `${moonBase}/user/mare-b-base.png`)
+      this.load.image('bgMoonMareC', `${moonBase}/user/mare-c-base.png`)
+    }
 
     const marsBase = '/assets/stages/mars'
-    this.load.image('bgMarsZoneA', `${marsBase}/user/zone-a-base.png`)
-    this.load.image('bgMarsZoneB', `${marsBase}/user/zone-b-base.png`)
-    this.load.image('bgMarsZoneC', `${marsBase}/user/zone-c-base.png`)
+    if (!IS_MINIGAME) {
+      this.load.image('bgMarsZoneA', `${marsBase}/user/zone-a-base.png`)
+      this.load.image('bgMarsZoneB', `${marsBase}/user/zone-b-base.png`)
+      this.load.image('bgMarsZoneC', `${marsBase}/user/zone-c-base.png`)
+    }
 
     this.load.once('complete', (loader, totalComplete, totalFailed) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H1',location:'BootScene.js:preload-complete',message:'Boot preload complete',data:{totalComplete,totalFailed},timestamp:Date.now()})}).catch(()=>{})
-      // #endregion
+      if (IS_MINIGAME && totalFailed > 0) {
+        console.warn('[BootScene] Mini game preload completed with failed assets:', totalFailed)
+      }
     })
     this.load.on('loaderror', (fileObj) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H1',location:'BootScene.js:preload-loaderror',message:'Boot preload file failed',data:{key:fileObj?.key ?? null,src:fileObj?.src ?? null,type:fileObj?.type ?? null},timestamp:Date.now()})}).catch(()=>{})
-      // #endregion
+      if (IS_MINIGAME) {
+        console.warn('[BootScene] Mini game asset failed:', fileObj?.key, fileObj?.src)
+      }
     })
   }
 
   create() {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H2',location:'BootScene.js:create-before-start',message:'Boot create starting GameScene',data:{hasPlayerTexture:this.textures.exists('player'),hasBgTile:this.textures.exists('bgTile')},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
+    if (IS_MINIGAME) this.createMiniGameTextures()
     this.createFxTextures()
     this.createMarsPlaceholderTextures()
     this.scene.start('GameScene')
+  }
+
+  createMiniGameTextures() {
+    this.createRectTexture('bgTile', 64, 64, 0x07111f, (g) => {
+      g.fillStyle(0x10223a, 0.7)
+      g.fillCircle(12, 12, 1.6)
+      g.fillCircle(42, 28, 1.2)
+      g.fillCircle(28, 52, 1.4)
+    })
+    this.createShipTexture('player', 0x55b7ff, 0xd9f3ff, true)
+    this.createShipTexture('enemy', 0xff9a72, 0x2a1515, false)
+    this.createShipTexture('enemyScout', 0xffc08a, 0x2a1515, false)
+    this.createShipTexture('enemyStriker', 0xff9a72, 0x2a1515, false)
+    this.createShipTexture('enemyTank', 0xff745d, 0x2a1515, false)
+    this.createShipTexture('enemySniper', 0xff6bd5, 0x2a1515, false)
+    this.createShipTexture('enemySwarm', 0xffb15f, 0x2a1515, false)
+    this.createShipTexture('enemyCharger', 0xff6c4f, 0x2a1515, false)
+    this.createShipTexture('enemyGuard', 0xff8374, 0x2a1515, false)
+    this.createShipTexture('enemyUfoElite', 0xff4e75, 0x2a1515, false)
+    this.createShipTexture('boss', 0xff5b46, 0x180808, false, 96, 74)
+    this.createBulletTexture('bullet', 0x72d8ff, 8, 26)
+    this.createBulletTexture('enemyBullet', 0xff7868, 8, 26)
+    this.createBulletTexture('bossBullet', 0xff3e54, 10, 34)
+    this.createOrbTexture('particle', 0xffffff, 8)
+    this.createOrbTexture('engineFlame', 0xff9a2a, 14)
+    this.createOrbTexture('pickupFire', 0x45b9ff, 34)
+    this.createOrbTexture('pickupShield', 0x56d89f, 34)
+    this.createOrbTexture('pickupLaser', 0x61f0ff, 34)
+    this.createOrbTexture('pickupSpread', 0x7fa8ff, 34)
+    this.createOrbTexture('pickupHoming', 0x66f7b5, 34)
+    this.createOrbTexture('pickupPierce', 0xffbe73, 34)
+    this.createOrbTexture('pickupBoomerang', 0xd09bff, 34)
+    this.createOrbTexture('pickupUltimate', 0xffc86e, 34)
+  }
+
+  createRectTexture(key, width, height, color, decorate) {
+    if (this.textures.exists(key)) return
+    const g = this.make.graphics({ x: 0, y: 0, add: false })
+    g.fillStyle(color, 1)
+    g.fillRect(0, 0, width, height)
+    if (decorate) decorate(g)
+    g.generateTexture(key, width, height)
+    g.destroy()
+  }
+
+  createShipTexture(key, color, accent, isPlayer, width = 72, height = 64) {
+    if (this.textures.exists(key)) return
+    const g = this.make.graphics({ x: 0, y: 0, add: false })
+    g.fillStyle(color, 1)
+    if (isPlayer) {
+      g.fillTriangle(width / 2, 4, 8, height - 8, width - 8, height - 8)
+      g.fillStyle(accent, 1)
+      g.fillTriangle(width / 2, 16, width / 2 - 9, height - 18, width / 2 + 9, height - 18)
+    } else {
+      g.fillTriangle(8, 8, width - 8, 8, width / 2, height - 6)
+      g.fillStyle(accent, 1)
+      g.fillCircle(width / 2, height * 0.42, Math.max(5, width * 0.09))
+    }
+    g.generateTexture(key, width, height)
+    g.destroy()
+  }
+
+  createBulletTexture(key, color, width, height) {
+    if (this.textures.exists(key)) return
+    const g = this.make.graphics({ x: 0, y: 0, add: false })
+    g.fillStyle(color, 1)
+    g.fillRoundedRect(0, 0, width, height, width / 2)
+    g.generateTexture(key, width, height)
+    g.destroy()
+  }
+
+  createOrbTexture(key, color, size) {
+    if (this.textures.exists(key)) return
+    const g = this.make.graphics({ x: 0, y: 0, add: false })
+    g.fillStyle(color, 0.95)
+    g.fillCircle(size / 2, size / 2, size / 2 - 2)
+    g.lineStyle(2, 0xffffff, 0.85)
+    g.strokeCircle(size / 2, size / 2, size / 2 - 3)
+    g.generateTexture(key, size, size)
+    g.destroy()
   }
 
   createMarsPlaceholderTextures() {

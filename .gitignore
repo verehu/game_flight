@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# WeChat Mini Game build outputs
+minigame/js/game-bundle.js
+minigame/assets/
+minigame/audio/
+
 # Large audio source archives
 assets/audio-src/*.7z
 

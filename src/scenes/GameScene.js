@@ -3,6 +3,11 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../game/config'
 import { Player, WEAPON_MODES } from '../entities/Player'
 import { SynthAudio } from '../audio/SynthAudio'
 
+const IS_MINIGAME = typeof __MINIGAME__ !== 'undefined' && __MINIGAME__
+const KEY_IDLE = Object.freeze({ isDown: false })
+const createIdleDirections = () => ({ up: KEY_IDLE, down: KEY_IDLE, left: KEY_IDLE, right: KEY_IDLE })
+const isJustDown = (key) => key !== KEY_IDLE && Phaser.Input.Keyboard.JustDown(key)
+
 const ENEMY_THEME = {
   common: 0xffb48c,
   elite: 0xff7a67,
@@ -415,9 +420,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H3',location:'GameScene.js:create-enter',message:'GameScene create entered',data:{hasPlayerTexture:this.textures.exists('player'),hasEnemyTexture:this.textures.exists('enemy'),hasBgTile:this.textures.exists('bgTile')},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
     this.score = 0
     this.lives = DEBUG_PARAMS.godMode ? 999 : 3
     this.maxLives = 6
@@ -505,40 +507,37 @@ export class GameScene extends Phaser.Scene {
       runChildUpdate: false
     })
 
-    this.cursors = this.input.keyboard.createCursorKeys()
-    this.wasd = this.input.keyboard.addKeys({
+    this.cursors = this.input.keyboard?.createCursorKeys?.() || createIdleDirections()
+    this.wasd = this.input.keyboard?.addKeys?.({
       up: Phaser.Input.Keyboard.KeyCodes.W,
       down: Phaser.Input.Keyboard.KeyCodes.S,
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D
-    })
-    this.inputKeys = this.input.keyboard.addKeys({
+    }) || createIdleDirections()
+    this.inputKeys = this.input.keyboard?.addKeys?.({
       mute: Phaser.Input.Keyboard.KeyCodes.M,
       ultimate: Phaser.Input.Keyboard.KeyCodes.SPACE
-    })
-    this.debugPointerLogAt = 0
-    this.debugUpdateLogAt = 0
-    this.debugInputConflictLogAt = 0
+    }) || { mute: KEY_IDLE, ultimate: KEY_IDLE }
 
     this.input.once('pointerdown', () => {
-      this.startAudio()
+      this.audio.unlock()
     })
-    this.input.keyboard.once('keydown', () => {
-      this.startAudio()
+    this.input.keyboard?.once?.('keydown', () => {
+      this.audio.unlock()
     })
+
+    if (IS_MINIGAME) {
+      this.input.on('pointerdown', (pointer) => {
+        if (pointer.x >= GAME_WIDTH * 0.62 && pointer.y <= 230) {
+          this.triggerUltimate()
+        }
+      })
+    }
 
     this.input.on('pointermove', (pointer) => {
       if (!pointer.isDown || !this.player.isAlive) return
-      const prevX = this.player.x
-      const prevY = this.player.y
       this.player.x = Phaser.Math.Clamp(pointer.x, 34, GAME_WIDTH - 34)
       this.player.y = Phaser.Math.Clamp(pointer.y, 30, GAME_HEIGHT - 30)
-      if (this.time.now >= this.debugPointerLogAt) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix',hypothesisId:'H1',location:'GameScene.js:pointermove',message:'Pointer movement applies direct position',data:{prevX,prevY,nextX:this.player.x,nextY:this.player.y,pointerX:pointer.x,pointerY:pointer.y,jumpDist:Math.hypot(this.player.x-prevX,this.player.y-prevY),vx:this.player.body?.velocity?.x||0,vy:this.player.body?.velocity?.y||0},timestamp:Date.now()})}).catch(()=>{})
-        // #endregion
-        this.debugPointerLogAt = this.time.now + 220
-      }
     })
 
     this.enemySpawnEvent = this.time.addEvent({
@@ -574,6 +573,13 @@ export class GameScene extends Phaser.Scene {
       this.scene.launch('UIScene')
     }
     this.setupMusic()
+    if (!this.sound.locked) {
+      this.startStageMusic()
+    } else {
+      this.sound.once('unlocked', () => {
+        this.startStageMusic()
+      })
+    }
 
     this.events.emit('score-changed', this.score)
     this.events.emit('lives-changed', this.lives)
@@ -584,9 +590,6 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('boss-hp-changed', null)
     this.events.emit('stage-changed', `${this.waveConfigs[this.waveIndex].name} - ${this.waveRemaining}s`)
     this.events.emit('audio-changed', this.audioMuted)
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H3',location:'GameScene.js:create-exit',message:'GameScene create completed',data:{phase:this.phase,uiActive:this.scene.isActive('UIScene'),enemySpawnDelay:this.enemySpawnEvent?.delay ?? null},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
   }
 
   update(time, delta) {
@@ -601,27 +604,6 @@ export class GameScene extends Phaser.Scene {
 
     this.handleAudioInput()
     this.handleUltimateInput()
-    const keyboardIntent =
-      this.cursors.left.isDown ||
-      this.cursors.right.isDown ||
-      this.cursors.up.isDown ||
-      this.cursors.down.isDown ||
-      this.wasd.left.isDown ||
-      this.wasd.right.isDown ||
-      this.wasd.up.isDown ||
-      this.wasd.down.isDown
-    if (time >= this.debugUpdateLogAt && this.player?.active) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix',hypothesisId:'H2',location:'GameScene.js:update',message:'Movement sample before player.update',data:{x:this.player.x,y:this.player.y,vx:this.player.body?.velocity?.x||0,vy:this.player.body?.velocity?.y||0,speed:Math.hypot(this.player.body?.velocity?.x||0,this.player.body?.velocity?.y||0),keyboardIntent,pointerDown:this.input.activePointer?.isDown||false},timestamp:Date.now()})}).catch(()=>{})
-      // #endregion
-      this.debugUpdateLogAt = time + 220
-    }
-    if (keyboardIntent && this.input.activePointer?.isDown && time >= this.debugInputConflictLogAt) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix',hypothesisId:'H4',location:'GameScene.js:update',message:'Keyboard and pointer active simultaneously',data:{x:this.player.x,y:this.player.y,vx:this.player.body?.velocity?.x||0,vy:this.player.body?.velocity?.y||0,pointerX:this.input.activePointer.x,pointerY:this.input.activePointer.y},timestamp:Date.now()})}).catch(()=>{})
-      // #endregion
-      this.debugInputConflictLogAt = time + 300
-    }
     this.player.update(this.cursors, this.wasd)
     this.updatePlayerEngineTrail(time)
     const fired = this.player.tryFire(time, this.playerBullets)
@@ -983,18 +965,6 @@ export class GameScene extends Phaser.Scene {
 
     this.updateSectorCrossfade(delta)
 
-    if (!this.bgDebugFirstFrameLogged) {
-      this.bgDebugFirstFrameLogged = true
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix',hypothesisId:'H2-H3',location:'GameScene.js:updateBackgroundLayers:first-frame',message:'Background tile positions first frame',data:{base:{x:this.background?.tilePositionX||0,y:this.background?.tilePositionY||0},dust:{x:this.backgroundDust?.tilePositionX||0,y:this.backgroundDust?.tilePositionY||0},planet:this.backgroundPlanet?{x:this.backgroundPlanet.tilePositionX,y:this.backgroundPlanet.tilePositionY}:null,overlay:this.backgroundOverlay?{x:this.backgroundOverlay.tilePositionX,y:this.backgroundOverlay.tilePositionY}:null,phase:this.phase},timestamp:Date.now()})}).catch(()=>{})
-      // #endregion
-    }
-    this.bgDebugFrameCount = (this.bgDebugFrameCount || 0) + 1
-    if (this.bgDebugFrameCount === 120) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'pre-fix',hypothesisId:'H2-H3',location:'GameScene.js:updateBackgroundLayers:frame-120',message:'Background tile positions after scrolling',data:{base:{x:this.background?.tilePositionX||0,y:this.background?.tilePositionY||0},dust:{x:this.backgroundDust?.tilePositionX||0,y:this.backgroundDust?.tilePositionY||0},planet:this.backgroundPlanet?{x:this.backgroundPlanet.tilePositionX,y:this.backgroundPlanet.tilePositionY}:null,overlay:this.backgroundOverlay?{x:this.backgroundOverlay.tilePositionX,y:this.backgroundOverlay.tilePositionY}:null,phase:this.phase},timestamp:Date.now()})}).catch(()=>{})
-      // #endregion
-    }
   }
 
   startAudio() {
@@ -1081,7 +1051,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   handleAudioInput() {
-    if (Phaser.Input.Keyboard.JustDown(this.inputKeys.mute)) {
+    if (isJustDown(this.inputKeys.mute)) {
       this.audioMuted = !this.audioMuted
       this.audio.setMuted(this.audioMuted)
       if (this.music.current && this.music.current.isPlaying) {
@@ -1092,7 +1062,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   handleUltimateInput() {
-    if (!Phaser.Input.Keyboard.JustDown(this.inputKeys.ultimate)) return
+    if (!isJustDown(this.inputKeys.ultimate)) return
     this.triggerUltimate()
   }
 

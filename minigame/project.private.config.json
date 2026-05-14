@@ -1,0 +1,9 @@
+{
+  "libVersion": "3.15.0",
+  "setting": {
+    "urlCheck": false,
+    "bigPackageSizeSupport": true,
+    "compileHotReLoad": false,
+    "ignoreDevUnusedFiles": true
+  }
+}

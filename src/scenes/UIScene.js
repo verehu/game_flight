@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { GAME_WIDTH } from '../game/config'
 
+const IS_MINIGAME = typeof __MINIGAME__ !== 'undefined' && __MINIGAME__
+
 const MODE_COLORS = {
   normal: '#d3c3ff',
   laser: '#7df7ff',
@@ -17,9 +19,6 @@ export class UIScene extends Phaser.Scene {
 
   create() {
     const gameScene = this.scene.get('GameScene')
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/37d80bce-582f-43d7-887b-668ec130d0ee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:'startup-debug',hypothesisId:'H4',location:'UIScene.js:create-enter',message:'UIScene create entered',data:{hasGameScene:Boolean(gameScene),gameSceneActive:this.scene.isActive('GameScene')},timestamp:Date.now()})}).catch(()=>{})
-    // #endregion
 
     this.add.rectangle(18, 10, GAME_WIDTH - 36, 208, 0x061120, 0.46).setOrigin(0, 0).setDepth(96)
     this.add.rectangle(18, 10, GAME_WIDTH - 36, 208, 0x6ec6ff, 0.12).setOrigin(0, 0).setDepth(97)
@@ -50,7 +49,7 @@ export class UIScene extends Phaser.Scene {
       .text(
         GAME_WIDTH / 2,
         66,
-        'Control: WASD / Arrows / Drag\nUltimate: SPACE  Radio: M',
+        IS_MINIGAME ? 'Control: Drag\nUltimate: tap top-right' : 'Control: WASD / Arrows / Drag\nUltimate: SPACE  Radio: M',
         {
           fontFamily: 'Arial',
           fontSize: '19px',
